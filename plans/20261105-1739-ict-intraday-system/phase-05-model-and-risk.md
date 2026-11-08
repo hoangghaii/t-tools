@@ -43,6 +43,7 @@ ARMED ──(giá vượt cực trị của sweep | hết killzone)──▶ IDL
   - `max_lot`: FX 0.05, vàng 0.01.
   - Nếu kết quả < `min_lot` thì **bỏ tín hiệu** (ghi lý do).
   - Với vốn 100 USD, ngưỡng này tương đương SL ≤ 20 pip ở 0.01 lot.
+  - (Ghi chú 2026-11-08) Giới hạn SL dùng **USD qua `max_risk_pct`** cho mọi mã. Bỏ `max_sl_pips_fx` trong `config/default.toml` và `RiskConfig` khi làm giai đoạn này. Pip XAUUSD = 0.1 USD (chỉ để hiển thị); 2 USD rủi ro ở 0.01 lot ứng với giá vàng đi 2 USD = 20 pip.
 - Giới hạn tài khoản:
   - 1 lệnh mở (hoặc lệnh chờ) trên toàn tài khoản.
   - Sau 2 lệnh lỗ trong một ngày giao dịch thì dừng ngày đó.

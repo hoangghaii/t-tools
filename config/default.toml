@@ -13,8 +13,9 @@ lot_step = 0.01
 enabled = true
 
 [symbols.XAUUSD]
-# Display convention only: one pip is 0.01 USD. Broker specifications override live.
-pip_size = 0.01
+# Display convention only: one pip is 0.10 USD (retail MT4/MT5 usage; 0.01 is a point).
+# Risk limits are in USD, so this changes reports, not position sizing.
+pip_size = 0.1
 contract_size = 100
 min_lot = 0.01
 lot_step = 0.01

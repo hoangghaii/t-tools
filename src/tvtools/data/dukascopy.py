@@ -2,7 +2,7 @@
 
 Verified with ``npx --yes dukascopy-node --help`` on 2026-11-06: ``-i``,
 ``-from`` (inclusive), ``-to`` (exclusive), ``-t m1``, ``-p bid|ask``,
-``-f csv``, ``-v``, ``-dir``, ``-fn``, ``-r``, ``-rp`` and ``-ch``.
+``-f csv``, ``-v``, ``-dir``, ``-fn``, ``-r`` and ``-rp``.
 Instrument ids are ``eurusd``, ``gbpusd`` and ``xauusd``. CSV timestamps are
 Unix epoch milliseconds UTC. Volume is bid-side candle volume in millions.
 
@@ -11,6 +11,21 @@ only minutes that had ticks; with ``-fl`` dukascopy-node 1.51.1 fills every
 gap with a synthetic candle at the previous close and zero volume
 (``normaliseCandles``). Those rows carry no market information, so tickless
 minutes stay absent and the resampler builds bars from the minutes present.
+
+``-v`` is required, not only for volume: without it dukascopy-node 1.51.1
+also emits tickless minutes (for example Sunday before the FX open) as flat
+candles, which would hide real gaps.
+
+``-ch`` (cache) is not passed. Stored Parquet months are already skipped, so
+the cache only adds a second copy that could replay a bad download.
+
+Dukascopy itself sometimes lacks one side for whole trading days (EURUSD
+2024-12 has no ask for the NY trading days of Dec 2, 5 and 6: 4188 bid-only
+minutes). When bid and ask disagree, the month is downloaded once more; if
+the second download repeats the same minutes, the gap is in the source, the
+one-sided minutes are dropped and their count is stored in the Parquet
+``attrs`` as ``one_sided_minutes``. A different second result means the
+download itself is unreliable, and the month fails.
 """
 
 import os
@@ -63,7 +78,6 @@ def _download_side(
     month: str,
     side: str,
     directory: Path,
-    cache: Path,
     runner: Runner,
 ) -> pd.DataFrame:
     start = pd.Period(month, freq="M").start_time.date()
@@ -94,9 +108,6 @@ def _download_side(
         "3",
         "-rp",
         "2000",
-        "-ch",
-        "-chpath",
-        str(cache),
     ]
     try:
         runner(command, check=True, capture_output=True, text=True, env=node_env())
@@ -146,18 +157,18 @@ def fetch_month(
             return path, False
         except (ValueError, OSError):
             pass
-    with tempfile.TemporaryDirectory(prefix="tvtools-dukascopy-") as temporary:
-        directory = Path(temporary)
-        cache = root / "dukascopy-cache"
-        bid = _download_side(symbol, month, "bid", directory, cache, runner)
-        ask = _download_side(symbol, month, "ask", directory, cache, runner)
-    if bid["ts"].duplicated().any() or ask["ts"].duplicated().any():
-        raise ValueError(f"duplicate source timestamps for {symbol} {month}")
-    frame = bid.merge(ask, on="ts", how="outer", validate="one_to_one", indicator=True)
-    if not frame["_merge"].eq("both").all():
-        counts = frame["_merge"].value_counts().to_dict()
-        raise ValueError(f"bid/ask timestamps disagree for {symbol} {month}: {counts}")
-    frame = frame.drop(columns=["_merge", "ask_volume"])
+    bid, ask = _download_pair(symbol, month, runner)
+    if not bid["ts"].equals(ask["ts"]):
+        retry_bid, retry_ask = _download_pair(symbol, month, runner)
+        same_bid = bid["ts"].equals(retry_bid["ts"])
+        if not (same_bid and ask["ts"].equals(retry_ask["ts"])):
+            raise RuntimeError(
+                f"unstable download for {symbol} {month}: bid/ask minutes "
+                "changed between attempts; run fetch again"
+            )
+    frame = bid.merge(ask, on="ts", how="inner", validate="one_to_one")
+    one_sided = len(bid) + len(ask) - 2 * len(frame)
+    frame = frame.drop(columns=["ask_volume"])
     frame = frame.rename(columns={"bid_volume": "volume"})
     frame = frame[
         [
@@ -172,8 +183,24 @@ def fetch_month(
             "ask_c",
             "volume",
         ]
-    ]
+    ].reset_index(drop=True)
+    frame.attrs["one_sided_minutes"] = one_sided
     return write_month(root, symbol, month, frame), True
+
+
+def _download_pair(
+    symbol: str, month: str, runner: Runner
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    with tempfile.TemporaryDirectory(prefix="tvtools-dukascopy-") as temporary:
+        directory = Path(temporary)
+        sides = [
+            _download_side(symbol, month, side, directory, runner)
+            for side in ("bid", "ask")
+        ]
+    if any(frame["ts"].duplicated().any() for frame in sides):
+        raise ValueError(f"duplicate source timestamps for {symbol} {month}")
+    bid, ask = (frame.sort_values("ts", ignore_index=True) for frame in sides)
+    return bid, ask
 
 
 def fetch_range(
