@@ -1,0 +1,17 @@
+.venv/
+.uv-cache/
+.uv-python/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.npm-cache/
+.env
+data/
+!src/tvtools/data/
+!tests/data/
+reports/
+dist/
+*.py[cod]
+.DS_Store

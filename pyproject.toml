@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tvtools"
+version = "0.1.0"
+description = "Intraday ICT signal research tools"
+requires-python = ">=3.12,<3.13"
+dependencies = ["numpy", "packaging>=25,<26", "pandas", "pyarrow", "plotly"]
+
+[dependency-groups]
+dev = [
+    "mypy",
+    "pandas-stubs",
+    "pytest",
+    "pytest-cov>=7.1.0",
+    "ruff",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tvtools"]
+force-include = { "config/default.toml" = "tvtools/default.toml" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = [".agentkit", ".agents", ".claude", ".codex", ".uv-cache", "dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["tvtools"]
+mypy_path = "src"

@@ -1,0 +1,3 @@
+# Optional: merge into .codex/config.toml after reviewing the server.
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"

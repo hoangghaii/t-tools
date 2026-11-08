@@ -1,0 +1,4 @@
+# agentkit:begin
+# AgentKit Engineer agents load from .codex/agents; model inherits the session.
+# Optional MCP: see .agentkit/templates/codex-mcp.toml.example
+# agentkit:end

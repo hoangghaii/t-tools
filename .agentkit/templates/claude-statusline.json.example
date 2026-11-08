@@ -1,0 +1,7 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "node -e \"const f=require('node:fs'),j=require('node:path');let p=process.cwd();while(!f.existsSync(j.join(p,'.agentkit/templates/statusline/claude-statusline.cjs'))){const q=j.dirname(p);if(q===p)process.exit(0);p=q;}require(j.join(p,'.agentkit/templates/statusline/claude-statusline.cjs'));\"",
+    "padding": 0
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let p=process.cwd(),f=require('node:fs'),j=require('node:path');while(!f.existsSync(j.join(p,'.agentkit/hooks/adapter.cjs'))){let q=j.dirname(p);if(q===p)process.exit(0);p=q;}process.argv=['node','adapter','claude','session'];require(j.join(p,'.agentkit/hooks/adapter.cjs'));\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let p=process.cwd(),f=require('node:fs'),j=require('node:path');while(!f.existsSync(j.join(p,'.agentkit/hooks/adapter.cjs'))){let q=j.dirname(p);if(q===p)process.exit(0);p=q;}process.argv=['node','adapter','claude','pre'];require(j.join(p,'.agentkit/hooks/adapter.cjs'));\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let p=process.cwd(),f=require('node:fs'),j=require('node:path');while(!f.existsSync(j.join(p,'.agentkit/hooks/adapter.cjs'))){let q=j.dirname(p);if(q===p)process.exit(0);p=q;}process.argv=['node','adapter','claude','post'];require(j.join(p,'.agentkit/hooks/adapter.cjs'));\""
+          }
+        ]
+      }
+    ]
+  }
+}

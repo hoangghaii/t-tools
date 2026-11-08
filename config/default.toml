@@ -1,0 +1,54 @@
+[symbols.EURUSD]
+pip_size = 0.0001
+contract_size = 100000
+min_lot = 0.01
+lot_step = 0.01
+enabled = true
+
+[symbols.GBPUSD]
+pip_size = 0.0001
+contract_size = 100000
+min_lot = 0.01
+lot_step = 0.01
+enabled = true
+
+[symbols.XAUUSD]
+# Display convention only: one pip is 0.01 USD. Broker specifications override live.
+pip_size = 0.01
+contract_size = 100
+min_lot = 0.01
+lot_step = 0.01
+enabled = false
+
+[sessions.asia]
+start = "20:00"
+end = "00:00"
+start_day_offset = -1
+
+[sessions.london_kz]
+start = "02:00"
+end = "05:00"
+start_day_offset = 0
+
+[sessions.nyam_kz]
+start = "07:00"
+end = "11:00"
+start_day_offset = 0
+
+[sessions.flat_by]
+start = "12:00"
+end = "12:00"
+start_day_offset = 0
+
+[risk]
+account_usd = 100.0
+lot = 0.01
+max_sl_pips_fx = 20.0
+max_open_trades = 1
+max_daily_losses = 2
+max_weekly_drawdown_fraction = 0.08
+min_rr = 2.0
+
+[ict]
+model_id = "sweep_mss_fvg"
+variant_id = "base"
