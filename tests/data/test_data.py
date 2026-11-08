@@ -135,12 +135,11 @@ def test_fetch_merges_bid_and_ask_csv(sample: pd.DataFrame, tmp_path: Path) -> N
     assert changed
     assert len(calls) == 2
     assert [call[call.index("-p") + 1] for call in calls] == ["bid", "ask"]
-    assert all("-fl" not in call for call in calls)
-    assert all(
-        call[call.index("-chpath") + 1] == str(tmp_path / "dukascopy-cache")
-        for call in calls
-    )
-    assert len(read_month(tmp_path, "EURUSD", "2024-01")) == 5
+    assert all("-fl" not in call and "-ch" not in call for call in calls)
+    assert all("-v" in call for call in calls)
+    stored = read_month(tmp_path, "EURUSD", "2024-01")
+    assert len(stored) == 5
+    assert stored.attrs["one_sided_minutes"] == 0
 
 
 def test_fetch_range_skips_months_on_second_run(
@@ -201,16 +200,47 @@ def test_fetch_reports_cli_failure(tmp_path: Path) -> None:
     assert not month_path(tmp_path, "EURUSD", "2024-01").exists()
 
 
-def test_fetch_rejects_one_sided_minutes(sample: pd.DataFrame, tmp_path: Path) -> None:
+def test_fetch_drops_repeatable_one_sided_minutes(
+    sample: pd.DataFrame, tmp_path: Path
+) -> None:
+    calls: list[list[str]] = []
+
     def runner(
         command: list[str], **kwargs: object
     ) -> subprocess.CompletedProcess[str]:
         side = command[command.index("-p") + 1]
         frame = sample.drop(index=2) if side == "ask" else sample
+        return fake_dukascopy(frame, calls)(command, **kwargs)
+
+    fetch_month(tmp_path, "EURUSD", "2024-01", runner=runner)
+    assert len(calls) == 4
+    stored = read_month(tmp_path, "EURUSD", "2024-01")
+    assert len(stored) == 4
+    assert stored.attrs["one_sided_minutes"] == 1
+    report = check_store(tmp_path, "EURUSD", tmp_path / "reports")
+    assert "One-sided source minutes dropped: 1" in report.read_text()
+
+
+def test_fetch_rejects_unstable_one_sided_minutes(
+    sample: pd.DataFrame, tmp_path: Path
+) -> None:
+    attempts = 0
+
+    def runner(
+        command: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        nonlocal attempts
+        side = command[command.index("-p") + 1]
+        if side == "ask":
+            attempts += 1
+            frame = sample.drop(index=attempts)
+        else:
+            frame = sample
         return fake_dukascopy(frame)(command, **kwargs)
 
-    with pytest.raises(ValueError, match="bid/ask timestamps disagree"):
+    with pytest.raises(RuntimeError, match="unstable download"):
         fetch_month(tmp_path, "EURUSD", "2024-01", runner=runner)
+    assert not month_path(tmp_path, "EURUSD", "2024-01").exists()
 
 
 def _minutes(start: str, count: int) -> pd.DataFrame:

@@ -20,9 +20,12 @@ class QualityResult:
     crossed_quotes: int
     gaps: pd.DataFrame
     spreads: pd.DataFrame
+    one_sided_minutes: int = 0
 
 
-def inspect(frame: pd.DataFrame, symbol: str) -> QualityResult:
+def inspect(
+    frame: pd.DataFrame, symbol: str, one_sided_minutes: int = 0
+) -> QualityResult:
     if list(frame.columns) != COLUMNS or frame.empty:
         raise ValueError("quality check requires nonempty canonical M1 data")
     ts = frame["ts"]
@@ -80,6 +83,7 @@ def inspect(frame: pd.DataFrame, symbol: str) -> QualityResult:
         int(crossed.sum()),
         gap_frame,
         spreads,
+        one_sided_minutes,
     )
 
 
@@ -95,10 +99,13 @@ def render_report(result: QualityResult, months_found: list[str]) -> str:
         f"Invalid OHLC: {result.invalid_ohlc}",
         f"Ask below bid: {result.crossed_quotes}",
         f"Gaps over 5 minutes: {len(result.gaps)}",
+        f"One-sided source minutes dropped: {result.one_sided_minutes}",
         "",
         "Gaps count only minutes inside the FX week (Sunday 17:00 to Friday 17:00"
         " New York), excluding US market holidays. dukascopy-node omits minutes"
-        " without ticks, so short quiet gaps are normal; review the long ones.",
+        " without ticks, so short quiet gaps are normal; review the long ones."
+        " Minutes where Dukascopy had only bid or only ask are dropped at fetch"
+        " time and appear here as gaps.",
         "",
         "## Largest gaps",
         "",
@@ -132,7 +139,8 @@ def check_store(root: Path, symbol: str, reports: Path) -> Path:
     if not files:
         raise FileNotFoundError(f"no M1 Parquet files for {symbol}")
     frames = [pd.read_parquet(path) for path in files]
-    result = inspect(pd.concat(frames, ignore_index=True), symbol)
+    one_sided = sum(int(f.attrs.get("one_sided_minutes", 0)) for f in frames)
+    result = inspect(pd.concat(frames, ignore_index=True), symbol, one_sided)
     output = reports / f"data-quality-{symbol}.md"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(render_report(result, [path.stem for path in files]))

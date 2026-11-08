@@ -40,7 +40,7 @@ Luồng dữ liệu: nến M1 → resample → bộ phát hiện ICT (sự kiệ
 | # | Giai đoạn | Phụ thuộc | Trạng thái |
 |---|---|---|---|
 | 1 | [Khung dự án và kiểu dữ liệu lõi](phase-01-project-foundation.md) | — | Hoàn thành 2026-11-06 |
-| 2 | [Dữ liệu lịch sử Dukascopy](phase-02-historical-data.md) | 1 | Đang thực hiện, tạm dừng; đã tải được dữ liệu thật, còn tải đủ 3 mã (2026-11-06) |
+| 2 | [Dữ liệu lịch sử Dukascopy](phase-02-historical-data.md) | 1 | Hoàn thành 2026-11-08 |
 | 3 | [Bộ phát hiện khái niệm ICT](phase-03-ict-detectors.md) | 2 | Chưa bắt đầu |
 | 4 | [Chart kiểm tra bằng mắt](phase-04-visual-review.md) | 3 | Chưa bắt đầu |
 | 5 | [Mô hình và bộ lọc rủi ro](phase-05-model-and-risk.md) | 3, 4 | Chưa bắt đầu |
